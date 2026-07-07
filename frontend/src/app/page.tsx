@@ -3,9 +3,34 @@
 import { useState } from "react";
 import CsvUploader from "@/components/CsvUploader";
 import PreviewTable from "@/components/PreviewTable";
+import ResultsTable from "@/components/ResultsTable";
+import { extractCrmRecords } from "@/lib/api";
+import type { ExtractResponse } from "@/types/crm";
 
 export default function Home() {
   const [rows, setRows] = useState<Record<string, string>[]>([]);
+  const [results, setResults] = useState<ExtractResponse | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleParsed = (parsedRows: Record<string, string>[]) => {
+    setRows(parsedRows);
+    setResults(null);
+    setError(null);
+  };
+
+  const handleConfirm = async () => {
+    setIsProcessing(true);
+    setError(null);
+    try {
+      const response = await extractCrmRecords(rows);
+      setResults(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-12">
@@ -18,7 +43,7 @@ export default function Home() {
         </p>
 
         <div className="mt-8">
-          <CsvUploader onParsed={setRows} />
+          <CsvUploader onParsed={handleParsed} />
         </div>
 
         {rows.length > 0 && (
@@ -31,12 +56,25 @@ export default function Home() {
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
-                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                onClick={handleConfirm}
+                disabled={isProcessing}
+                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                Confirm Import
+                {isProcessing ? "Processing..." : "Confirm Import"}
               </button>
             </div>
           </div>
+        )}
+
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+        {results && (
+          <ResultsTable
+            imported={results.imported}
+            skipped={results.skipped}
+            totalImported={results.totalImported}
+            totalSkipped={results.totalSkipped}
+          />
         )}
       </main>
     </div>
