@@ -1,5 +1,26 @@
 import type { CrmRecord, SkippedRecord } from "@/types/crm";
 
+const STATUS_STYLES: Record<string, string> = {
+  GOOD_LEAD_FOLLOW_UP: "bg-blue-100 text-blue-700",
+  DID_NOT_CONNECT: "bg-gray-100 text-gray-600",
+  BAD_LEAD: "bg-red-100 text-red-700",
+  SALE_DONE: "bg-green-100 text-green-700",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  if (!status) return <span className="text-gray-400">—</span>;
+
+  return (
+    <span
+      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
+        STATUS_STYLES[status] ?? "bg-gray-100 text-gray-600"
+      }`}
+    >
+      {status.replaceAll("_", " ")}
+    </span>
+  );
+}
+
 const CRM_COLUMNS: (keyof CrmRecord)[] = [
   "created_at",
   "name",
@@ -33,14 +54,24 @@ export default function ResultsTable({
 }: ResultsTableProps) {
   return (
     <div className="mt-8 space-y-8">
-      <div className="flex gap-6">
-        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-          <p className="text-xs text-gray-500">Total Imported</p>
-          <p className="text-xl font-semibold text-green-700">{totalImported}</p>
+      <div className="flex gap-4">
+        <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-5 py-4">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-600 text-white">
+            ✓
+          </span>
+          <div>
+            <p className="text-xs text-green-700">Total Imported</p>
+            <p className="text-xl font-semibold text-green-800">{totalImported}</p>
+          </div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-          <p className="text-xs text-gray-500">Total Skipped</p>
-          <p className="text-xl font-semibold text-red-700">{totalSkipped}</p>
+        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white">
+            ✕
+          </span>
+          <div>
+            <p className="text-xs text-red-700">Total Skipped</p>
+            <p className="text-xl font-semibold text-red-800">{totalSkipped}</p>
+          </div>
         </div>
       </div>
 
@@ -67,7 +98,11 @@ export default function ResultsTable({
                 <tr key={i} className="border-t border-gray-100 even:bg-gray-50">
                   {CRM_COLUMNS.map((col) => (
                     <td key={col} className="whitespace-nowrap px-4 py-2 text-gray-800">
-                      {record[col]}
+                      {col === "crm_status" ? (
+                        <StatusBadge status={record[col]} />
+                      ) : (
+                        record[col]
+                      )}
                     </td>
                   ))}
                 </tr>
