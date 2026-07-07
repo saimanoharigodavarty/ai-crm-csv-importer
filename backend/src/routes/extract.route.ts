@@ -1,35 +1,13 @@
 import { Router } from "express";
 import { chunk } from "../utils/batch";
-import type { CrmRecord, ExtractResponse, RawRow } from "../types/crm";
+import { processBatch } from "../services/crmMapper.service";
+import type { CrmRecord, ExtractResponse, RawRow, SkippedRecord } from "../types/crm";
 
 const BATCH_SIZE = 20;
 
 const router = Router();
 
-// TEMPORARY: returns one dummy record per batch, no real mapping yet.
-// Proves the request -> batching -> response plumbing works end to end
-// before Gemini integration is added in the next commit.
-function dummyMapBatch(batch: RawRow[]): CrmRecord {
-  return {
-    created_at: new Date().toISOString(),
-    name: "Dummy User",
-    email: "dummy@example.com",
-    country_code: "+91",
-    mobile_without_country_code: "9999999999",
-    company: "",
-    city: "",
-    state: "",
-    country: "",
-    lead_owner: "",
-    crm_status: "GOOD_LEAD_FOLLOW_UP",
-    crm_note: `Generated from a batch of ${batch.length} row(s)`,
-    data_source: "",
-    possession_time: "",
-    description: "",
-  };
-}
-
-router.post("/extract", (req, res) => {
+router.post("/extract", async (req, res) => {
   const rows: RawRow[] = req.body?.rows;
 
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -37,13 +15,21 @@ router.post("/extract", (req, res) => {
   }
 
   const batches = chunk(rows, BATCH_SIZE);
-  const imported: CrmRecord[] = batches.map(dummyMapBatch);
+
+  const imported: CrmRecord[] = [];
+  const skipped: SkippedRecord[] = [];
+
+  for (const batch of batches) {
+    const result = await processBatch(batch);
+    imported.push(...result.imported);
+    skipped.push(...result.skipped);
+  }
 
   const response: ExtractResponse = {
     imported,
-    skipped: [],
+    skipped,
     totalImported: imported.length,
-    totalSkipped: 0,
+    totalSkipped: skipped.length,
   };
 
   res.json(response);
