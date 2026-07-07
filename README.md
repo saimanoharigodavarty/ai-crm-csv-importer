@@ -21,3 +21,13 @@ Server starts on `http://localhost:5000`. Check it's running via:
 ```bash
 curl http://localhost:5000/health
 ```
+
+## Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+App starts on `http://localhost:3000`. Upload a CSV to see it parsed and previewed in a table (no AI processing happens at this stage).
