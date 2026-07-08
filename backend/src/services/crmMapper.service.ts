@@ -14,17 +14,23 @@ function buildPrompt(batch: RawRow[]): string {
 }
 
 async function callCerebras(prompt: string): Promise<string> {
-  const completion = await cerebrasClient.chat.completions.create({
-    model: CEREBRAS_MODEL,
-    messages: [{ role: "user", content: prompt }],
-  });
+  try {
+    const completion = await cerebrasClient.chat.completions.create({
+      model: CEREBRAS_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0,
+    });
 
-  const text = completion.choices[0]?.message?.content;
-  if (!text) {
-    throw new Error("Cerebras response had no content");
+    const text = completion.choices[0]?.message?.content;
+    if (!text) {
+      throw new Error("Cerebras response had no content");
+    }
+
+    return text;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Cerebras request failed: ${message}`);
   }
-
-  return text;
 }
 
 function parseResponse(rawText: string, expectedLength: number): unknown[] {
@@ -88,9 +94,10 @@ export async function processBatch(batch: RawRow[]): Promise<BatchResult> {
     });
   } catch (err) {
     console.error("processBatch failed:", err);
+    const reason = err instanceof Error ? err.message : "AI processing failed after retries";
     const skipped: SkippedRecord[] = batch.map((row) => ({
       row,
-      reason: "AI processing failed after retries",
+      reason,
     }));
     return buildBatchResult([], skipped);
   }
