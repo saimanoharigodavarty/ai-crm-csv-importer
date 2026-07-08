@@ -1,4 +1,4 @@
-import { groqClient, GROQ_MODEL } from "../config/groq";
+import { cerebrasClient, CEREBRAS_MODEL } from "../config/cerebras";
 import { buildCrmExtractionPrompt } from "../prompts/crmPrompt";
 import { retry } from "../utils/retry";
 import { validateSchema, validateBusinessRules } from "../validators/crmRecord.validator";
@@ -13,15 +13,15 @@ function buildPrompt(batch: RawRow[]): string {
   return buildCrmExtractionPrompt(batch);
 }
 
-async function callGroq(prompt: string): Promise<string> {
-  const completion = await groqClient.chat.completions.create({
-    model: GROQ_MODEL,
+async function callCerebras(prompt: string): Promise<string> {
+  const completion = await cerebrasClient.chat.completions.create({
+    model: CEREBRAS_MODEL,
     messages: [{ role: "user", content: prompt }],
   });
 
   const text = completion.choices[0]?.message?.content;
   if (!text) {
-    throw new Error("Groq response had no content");
+    throw new Error("Cerebras response had no content");
   }
 
   return text;
@@ -34,7 +34,7 @@ function parseResponse(rawText: string, expectedLength: number): unknown[] {
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("Groq response was not valid JSON");
+    throw new Error("Cerebras response was not valid JSON");
   }
 
   if (!Array.isArray(parsed) || parsed.length !== expectedLength) {
@@ -83,7 +83,7 @@ export async function processBatch(batch: RawRow[]): Promise<BatchResult> {
   let candidates: unknown[];
   try {
     candidates = await retry(async () => {
-      const rawText = await callGroq(prompt);
+      const rawText = await callCerebras(prompt);
       return parseResponse(rawText, batch.length);
     });
   } catch (err) {
