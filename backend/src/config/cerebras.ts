@@ -12,4 +12,4 @@ export const cerebrasClient = new OpenAI({
   baseURL: "https://api.cerebras.ai/v1",
 });
 
-export const CEREBRAS_MODEL = process.env.CEREBRAS_MODEL || "llama-3.3-70b";
+export const CEREBRAS_MODEL = process.env.CEREBRAS_MODEL || "gpt-oss-120b";
