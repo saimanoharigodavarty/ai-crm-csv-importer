@@ -1,11 +1,12 @@
 import type { ExtractResponse } from "@/types/crm";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+const EXTRACT_URL = new URL("/api/extract", API_BASE_URL).toString();
 
 export async function extractCrmRecords(
   rows: Record<string, string>[]
 ): Promise<ExtractResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/extract`, {
+  const res = await fetch(EXTRACT_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ rows }),
