@@ -118,13 +118,13 @@ export default function ResultsTable({
             Skipped Records
           </h2>
           <div className="max-h-96 overflow-auto rounded-lg border border-gray-200">
-            <table className="min-w-full text-sm">
+            <table className="w-full table-fixed text-sm">
               <thead className="sticky top-0 bg-gray-100">
                 <tr>
-                  <th className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-700">
+                  <th className="w-96 px-4 py-2 text-left font-medium text-gray-700">
                     Reason
                   </th>
-                  <th className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-700">
+                  <th className="px-4 py-2 text-left font-medium text-gray-700">
                     Original Row
                   </th>
                 </tr>
@@ -132,8 +132,10 @@ export default function ResultsTable({
               <tbody>
                 {skipped.map((item, i) => (
                   <tr key={i} className="border-t border-gray-100 even:bg-gray-50">
-                    <td className="whitespace-nowrap px-4 py-2 text-red-700">{item.reason}</td>
-                    <td className="whitespace-nowrap px-4 py-2 text-gray-600">
+                    <td className="break-words px-4 py-2 align-top text-red-700">
+                      {item.reason}
+                    </td>
+                    <td className="break-words px-4 py-2 align-top text-gray-600">
                       {JSON.stringify(item.row)}
                     </td>
                   </tr>

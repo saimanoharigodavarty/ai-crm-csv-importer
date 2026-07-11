@@ -37,6 +37,25 @@ const crmRecordSchema = z.object({
   description: z.string(),
 });
 
+const FIELD_ISSUE_MESSAGES: Record<string, string> = {
+  crm_status:
+    "The AI suggested a lead status that isn't one of our supported values, so this row was skipped rather than guess.",
+  data_source:
+    "The lead source didn't match any of our known sources, so this row was skipped for manual review.",
+  created_at:
+    "The lead's date couldn't be confidently understood, so this row was skipped instead of risking a wrong date.",
+};
+
+function describeSchemaIssue(field: string): string {
+  if (FIELD_ISSUE_MESSAGES[field]) {
+    return FIELD_ISSUE_MESSAGES[field];
+  }
+  if (!field) {
+    return "This row's data didn't match the expected CRM format, so it was skipped to keep your data clean.";
+  }
+  return `The "${field}" field came back in an unexpected format, so this row was skipped to keep your data clean.`;
+}
+
 export type SchemaValidationResult =
   | { success: true; data: CrmRecord }
   | { success: false; reason: string };
@@ -46,8 +65,8 @@ export function validateSchema(record: unknown): SchemaValidationResult {
 
   if (!result.success) {
     const firstIssue = result.error.issues[0];
-    const reason = `schema: ${firstIssue.path.join(".")} - ${firstIssue.message}`;
-    return { success: false, reason };
+    const field = firstIssue.path.join(".");
+    return { success: false, reason: describeSchemaIssue(field) };
   }
 
   return { success: true, data: result.data as CrmRecord };
@@ -61,7 +80,8 @@ export function validateBusinessRules(record: CrmRecord): BusinessRuleResult {
   if (!record.email && !record.mobile_without_country_code) {
     return {
       valid: false,
-      reason: "business rule: missing both email and mobile number",
+      reason:
+        "No email or phone number on this lead — without a way to reach them, it was left out of the import.",
     };
   }
 
