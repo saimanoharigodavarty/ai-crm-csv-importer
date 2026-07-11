@@ -1,8 +1,8 @@
 # AI-Powered CRM CSV Importer
 
-An AI-powered CSV importer that maps leads from any CSV layout (Facebook lead exports, Google Ads exports, manual spreadsheets, other CRM exports, etc.) into a standard CRM record format — without assuming fixed column names.
+An AI-assisted CSV importer that maps leads from any CSV layout (Facebook lead exports, Google Ads exports, manual spreadsheets, other CRM exports, etc.) into a standard CRM record format — without assuming fixed column names.
 
-Upload a CSV, preview the parsed data, confirm the import, and let the backend use an LLM (Groq) to intelligently map arbitrary CSV columns into a standardized CRM schema. The extracted records are validated before being returned as imported or skipped with clear reasons.
+Upload a CSV, preview the parsed data, confirm the import, and let an LLM (Cerebras) intelligently map arbitrary CSV columns into a standardized CRM schema. The extracted records are validated before being returned as imported or skipped with clear reasons.
 
 ## Features
 
@@ -25,13 +25,13 @@ Upload a CSV, preview the parsed data, confirm the import, and let the backend u
              Preview & Confirmation
                      │
                      ▼
-          POST /api/extract (Express)
+          POST /api/extract (Next.js Route Handler)
                      │
                      ▼
              Batch Processing (20 rows)
                      │
                      ▼
-               Groq (Llama 3.3 70B)
+          Cerebras (gpt-oss-120b, OpenAI-compatible API)
                      │
                      ▼
           Schema Validation (Zod)
@@ -43,64 +43,59 @@ Upload a CSV, preview the parsed data, confirm the import, and let the backend u
    Imported Records / Skipped Records
 ```
 
+The app is a single Next.js project — the UI and the API route both live in the same deployment, there is no separate backend service.
+
 ## Tech Stack
 
-- **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS
-- **Backend:** Node.js, Express, TypeScript
-- **AI:** Groq (Llama 3.3 70B) via the OpenAI-compatible SDK
+- **Framework:** Next.js (App Router), TypeScript, Tailwind CSS
+- **AI:** Cerebras (`gpt-oss-120b`) via the OpenAI-compatible SDK
 - **Validation:** Zod
+- **CSV parsing:** PapaParse
 
 ## Project Structure
 
 ```
-ai-crm-importer/
-├── backend/
-│   └── src/
-│       ├── server.ts                    # Express app entry point
-│       ├── config/groq.ts               # Groq client setup
-│       ├── routes/extract.route.ts      # POST /api/extract
-│       ├── services/crmMapper.service.ts# Per-batch AI mapping + validation
-│       ├── prompts/crmPrompt.ts         # LLM prompt construction
-│       ├── validators/crmRecord.validator.ts # Zod schema + business rules
-│       ├── utils/{batch,retry}.ts       # Batching and generic retry helpers
-│       └── types/crm.ts                 # Shared CRM record types
-└── frontend/
-    └── src/
-        ├── app/page.tsx                # Single-page upload → preview → results flow
-        ├── components/                 # CsvUploader, PreviewTable, ResultsTable, etc.
-        ├── lib/api.ts                  # Backend API client
-        └── types/crm.ts                # Mirrored CRM record types
+ai-crm-csv-importer/
+└── src/
+    ├── app/
+    │   ├── page.tsx                     # Single-page upload → preview → results flow
+    │   └── api/
+    │       ├── extract/route.ts         # POST /api/extract
+    │       └── health/route.ts          # GET /api/health
+    ├── components/                      # CsvUploader, PreviewTable, ResultsTable, ProcessingStatus, StepIndicator
+    ├── lib/
+    │   ├── api.ts                       # Frontend → /api/extract client
+    │   └── backend/
+    │       ├── config/cerebras.ts       # Cerebras client setup
+    │       ├── prompts/crmPrompt.ts     # LLM prompt construction
+    │       ├── services/crmMapper.service.ts # Per-batch AI mapping + validation
+    │       ├── validators/crmRecord.validator.ts # Zod schema + business rules
+    │       ├── utils/{batch,retry}.ts   # Batching and generic retry helpers
+    │       └── types/crm.ts             # Shared CRM record types
+    └── types/crm.ts                     # Frontend-facing CRM record types
 ```
 
 ## Setup
 
-### Backend
-
 ```bash
-cd backend
 npm install
-cp .env.example .env   # then add your GROQ_API_KEY
+cp .env.example .env   # then add your CEREBRAS_API_KEY
 npm run dev
 ```
 
-Runs on `http://localhost:5000`. Verify with:
+Runs on `http://localhost:3000`. Verify with:
 
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:3000/api/health
 ```
 
-Create a `.env` file from `.env.example` and provide your `GROQ_API_KEY`.
+### Getting a Cerebras API key
 
-### Frontend
+1. Sign up / log in at [cloud.cerebras.ai](https://cloud.cerebras.ai)
+2. Generate an API key from the dashboard
+3. Add it to `.env` as `CEREBRAS_API_KEY`
 
-```bash
-cd frontend
-npm install
-cp .env.example .env   # NEXT_PUBLIC_API_BASE_URL, defaults to http://localhost:5000
-npm run dev
-```
-
-Runs on `http://localhost:3000`.
+This is the only environment variable the app needs.
 
 ## API Reference
 
@@ -150,7 +145,11 @@ Rows are processed in batches (20 rows/batch). Each batch is validated in two st
 1. **Schema validation** — field types, `crm_status`/`data_source` enum membership, `created_at` date validity
 2. **Business rules** — currently: a record must have an `email` or a `mobile_without_country_code`
 
-Records failing either stage are returned in `skipped` with a specific `reason`. A batch that fails to get a usable AI response (after 3 retries) has all of its rows marked skipped, but does not affect other batches.
+Records failing either stage are returned in `skipped` with a specific reason. A batch that fails to get a usable AI response (after 3 retries, exponential backoff) has all of its rows marked skipped, but does not affect other batches.
+
+### `GET /api/health`
+
+Returns `{ "status": "ok" }`. Useful for uptime checks.
 
 ## Design Decisions
 
