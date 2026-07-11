@@ -10,7 +10,7 @@ export default function ProcessingStatus() {
       </div>
 
       <ul className="mt-5 space-y-1 text-sm text-gray-500">
-        <li>Sending batches to Groq</li>
+        <li>Sending batches to AI model</li>
         <li>Mapping CRM fields</li>
         <li>Validating results</li>
       </ul>

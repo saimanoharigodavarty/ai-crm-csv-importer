@@ -1,7 +1,6 @@
 import type { ExtractResponse } from "@/types/crm";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
-const EXTRACT_URL = new URL("/api/extract", API_BASE_URL).toString();
+const EXTRACT_URL = "/api/extract";
 
 export async function extractCrmRecords(
   rows: Record<string, string>[]
