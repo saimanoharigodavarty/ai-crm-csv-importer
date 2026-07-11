@@ -107,9 +107,9 @@ STRICT RULES
     Return ONLY valid JSON. Do not wrap the JSON in markdown code blocks (e.g. 'json'). Do not include explanations. Do not include comments. Return an array of CRM records.
 
 INPUT
-\${JSON.stringify(batch, null, 2)}
+${JSON.stringify(batch, null, 2)}
 
 EXPECTED OUTPUT
-A JSON array of \${batch.length} object(s), matching the CRM schema and rules above, in the same order as the input rows. Return ONLY the raw JSON array of objects.
+A JSON array of ${batch.length} object(s), matching the CRM schema and rules above, in the same order as the input rows. Return ONLY the raw JSON array of objects.
 `.trim();
 }
